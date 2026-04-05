@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
 import bcrypt from 'bcryptjs';
+import { Request, Response } from "express";
 import jwt from 'jsonwebtoken';
 
 import User, { IUser } from "../models/User.model";
@@ -28,7 +28,7 @@ export const signup = async (req: Request, res: Response) => {
     });
 
     res.status(201).json({ 
-      status: true, 
+      success: true, 
       message: 'User created successfully',
       data: sanitizeUser(user)
     })
@@ -60,7 +60,7 @@ export const login = async (req: Request, res: Response) => {
     }, res);
 
     res.status(201).json({ 
-      status: true, 
+      success: true, 
       message: 'User login successfully',
       data: sanitizeUser(user)
     })
@@ -76,7 +76,7 @@ export const login = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
   res.cookie('jwt', '', { maxAge: 0 });
   res.status(200).json({
-    status: true,
+    success: true,
     message: 'User logged out successfully'
   })
 };

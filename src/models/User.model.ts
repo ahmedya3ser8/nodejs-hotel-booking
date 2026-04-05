@@ -6,7 +6,9 @@ export interface IUser extends Document {
   password: string;
   phone: string;
   role: 'user' | 'admin';
+  passwordChangeAt: Date;
   profileImage?: string | null;
+  profileImagePublicId?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -17,7 +19,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      minlength: 5
+      minlength: 3
     },
     email: {
       type: String,
@@ -44,6 +46,13 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     profileImage: {
       type: String,
       default: null
+    },
+    profileImagePublicId: {
+      type: String,
+      default: null
+    },
+    passwordChangeAt: {
+      type: Date
     }
   },
   { timestamps: true }

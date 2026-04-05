@@ -9,17 +9,26 @@ export interface AuthRequest extends Request {
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    // 1) check if token exist
     const token = req.cookies.jwt;
     if (!token) return res.status(401).json({ message: 'Not authorized, please login to access this route' });
 
+    // 2) verify token (changes happen, expire token)
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
     if (!decoded) return res.status(401).json({ message: 'Unauthorized - Invalid token' });
 
-    console.log('decoded', decoded);
-
+    // 3) check if user exists
     const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(401).json({ message: 'The user belonging to this token no longer exists' })
-    
+    if (!user) return res.status(401).json({ message: 'The user belonging to this token no longer exists' });
+
+    // 4) check if user change password after token created
+    if (user.passwordChangeAt) {
+      const passwordChangeTime = user.passwordChangeAt.getTime() / 1000;
+      if (passwordChangeTime > decoded.iat!) {
+        return res.status(401).json({ message: 'Password was changed recently. Please login again' });
+      }
+    }
+
     req.user = user;
     next();
   } catch (error) {
