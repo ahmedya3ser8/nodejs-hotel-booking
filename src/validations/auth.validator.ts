@@ -19,12 +19,12 @@ export const singUpValidator = [
   body('password')
     .notEmpty()
     .withMessage('password is required')
+    .bail()
     .matches(/^[A-Z][a-z0-9@#$]{7,}$/)
     .withMessage('Password must start with uppercase and be at least 8 characters'),
   body('phone')
     .notEmpty()
     .withMessage('phone is required')
-    .isMobilePhone('ar-EG').withMessage('Invalid Egyptian phone number')
     .matches(/^01[0125][0-9]{8}$/)
     .withMessage('Phone must start with 010, 011, 012, or 015 and be 11 digits'),
   validator

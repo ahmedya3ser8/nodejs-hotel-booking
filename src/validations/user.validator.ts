@@ -5,28 +5,32 @@ import validator from "../middlewares/validator.middleware";
 import User from "../models/User.model";
 
 export const updateLoggedPasswordValidator = [
-  body('currentPassword')
-    .notEmpty()
-    .withMessage('Current Password is required'),
-  body('confirmNewPassword')
-    .notEmpty()
-    .withMessage('confirmPassword is required'),
   body('newPassword')
     .notEmpty()
     .withMessage('newPassword is required')
+    .bail()
     .matches(/^[A-Z][a-z0-9@#$]{7,}$/)
-    .withMessage('newPassword must start with uppercase and be at least 8 characters')
+    .withMessage('newPassword must start with uppercase and be at least 8 characters'),
+  body('confirmNewPassword')
+    .notEmpty()
+    .withMessage('confirmNewPassword is required')
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error('Confirm Password incorrect')
+      }
+      return true;
+    }),
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current Password is required')
     .custom(async (value, { req }) => {
       const user = await User.findById(req.user._id);
       if (!user) {
         throw new Error('User not found');
       }
-      const isPassCorrect = await bcrypt.compare(req.body.currentPassword, user.password);
+      const isPassCorrect = await bcrypt.compare(value, user.password);
       if (!isPassCorrect) {
         throw new Error('Incorrect current password');
-      }
-      if (value !== req.body.confirmNewPassword) {
-        throw new Error('Confirm Password incorrect')
       }
       return true;
     }),
@@ -45,16 +49,15 @@ export const updateLoggedUserValidator = [
     .isEmail()
     .withMessage('Invalid email address')
     .normalizeEmail()
-    .custom(async (value) => {
+    .custom(async (value, { req }) => {
       const user = await User.findOne({ email: value });
-      if (user) {
+      if (user && user._id.toString() !== req.user._id.toString()) {
         throw new Error('Email already exist');
       }
       return true;
     }),
   body('phone')
     .optional()
-    .isMobilePhone('ar-EG').withMessage('Invalid Egyptian phone number')
     .matches(/^01[0125][0-9]{8}$/)
     .withMessage('Phone must start with 010, 011, 012, or 015 and be 11 digits'),
   validator

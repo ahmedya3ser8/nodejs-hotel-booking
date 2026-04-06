@@ -1,85 +1,73 @@
 import bcrypt from 'bcryptjs';
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import jwt from 'jsonwebtoken';
 
 import User, { IUser } from "../models/User.model";
+import catchAsync from '../middlewares/catchAsync.middleware';
+import ApiError from '../utils/apiError';
 
 // @desc    SignUp
 // @route   POST /api/auth/signup
 // @access  Public
-export const signup = async (req: Request, res: Response) => {
-  try {
-    const { username, email, password, phone } = req.body;
-    // check if use exist
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' })
-    }
+export const signup = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { username, email, password, phone } = req.body;
 
-    // hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // create user
-    const user = await User.create({
-      username,
-      email,
-      phone,
-      password: hashedPassword
-    });
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'User created successfully',
-      data: sanitizeUser(user)
-    })
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    return next(new ApiError('User already exists', 400));
   }
-};
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await User.create({
+    username,
+    email,
+    phone,
+    password: hashedPassword
+  });
+
+  res.status(201).json({ 
+    success: true, 
+    message: 'User created successfully',
+    data: sanitizeUser(user)
+  })
+});
 
 // @desc    Login
 // @route   POST /api/auth/login
 // @access  Public
-export const login = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
+export const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
 
-    // check if user exist
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid email or password' });
+  const user = await User.findOne({ email });
+  if (!user) return next(new ApiError('Invalid email or password', 400));
 
-    // check if password matched
-    const isMatchedPassword = await bcrypt.compare(password, user.password);
-    if (!isMatchedPassword) return res.status(400).json({ message: 'Invalid email or password' });
+  const isMatchedPassword = await bcrypt.compare(password, user.password);
+  if (!isMatchedPassword) return next(new ApiError('Invalid email or password', 400));
 
-    generateToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role
-    }, res);
+  generateToken({
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role
+  }, res);
 
-    res.status(201).json({ 
-      success: true, 
-      message: 'User login successfully',
-      data: sanitizeUser(user)
-    })
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+  res.status(201).json({ 
+    success: true, 
+    message: 'User login successfully',
+    data: sanitizeUser(user)
+  })
+});
 
 // @desc    Logout
 // @route   POST /api/auth/logout
 // @access  Public
-export const logout = async (req: Request, res: Response) => {
+export const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   res.cookie('jwt', '', { maxAge: 0 });
   res.status(200).json({
     success: true,
     message: 'User logged out successfully'
   })
-};
+});
 
 export const generateToken = (payload: { id: string; email: string; role: string }, res: Response) => {
   const token = jwt.sign(payload, process.env.JWT_SECRET!, {
