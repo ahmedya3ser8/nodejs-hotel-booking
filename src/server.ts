@@ -49,7 +49,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Global Error
 app.use(globalError);
 
-app.listen(process.env.PORT || 3000, () => {
+const server =app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running on port ${process.env.PORT}`);
   connectDB();
 });
+
+process.on('unhandledRejection', (err: any) => {
+  console.log(`UnhandledRejection Errors: ${err.name} | ${err.message} `);
+  server.close(() => {
+    console.log('Shutting down....');
+    process.exit(1);
+  });
+})
