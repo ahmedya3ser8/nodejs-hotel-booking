@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import User, { IUser } from "../models/User.model";
 import catchAsync from '../middlewares/catchAsync.middleware';
 import ApiError from '../utils/apiError';
+import { cookieConfig } from '../config/cookie';
 
 // @desc    SignUp
 // @route   POST /api/auth/signup
@@ -62,7 +63,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
 // @route   POST /api/auth/logout
 // @access  Public
 export const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  res.cookie('jwt', '', { maxAge: 0 });
+  res.clearCookie('hb_session', cookieConfig);
   res.status(200).json({
     success: true,
     message: 'User logged out successfully'
@@ -73,12 +74,7 @@ export const generateToken = (payload: { id: string; email: string; role: string
   const token = jwt.sign(payload, process.env.JWT_SECRET!, {
     expiresIn: '7d'
   })
-  res.cookie('jwt', token, {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    httpOnly: true
-  });
+  res.cookie('hb_session', token, cookieConfig);
   return token;
 };
 

@@ -10,7 +10,7 @@ export interface AuthRequest extends Request {
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // 1) check if token exist
-    const token = req.cookies.jwt;
+    const token = req.cookies.hb_session;
     if (!token) return res.status(401).json({ message: 'Not authorized, please login to access this route' });
 
     // 2) verify token (changes happen, expire token)
